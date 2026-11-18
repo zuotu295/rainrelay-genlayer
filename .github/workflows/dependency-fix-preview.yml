@@ -19,7 +19,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply semver-compatible audit fixes to the lockfile
-        run: npm audit fix --package-lock-only || true
+        run: npm audit fix --force --package-lock-only || true
       - name: Validate lockfile and build
         run: |
           npm ci
@@ -38,6 +38,7 @@ jobs:
         with:
           name: dependency-fix-preview
           path: |
+            package.json
             package-lock.json
             npm-audit-after-fix.json
           retention-days: 3
