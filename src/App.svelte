@@ -102,7 +102,7 @@
     try {
       const updates = await Promise.all(activity.filter((entry) => !finalStates.has(entry.state)).map(async (entry) => {
         try {
-          const status = await transaction(entry.hash);
+          const status = await transaction(entry.hash, entry.method);
           changed ||= status.state === 'Finalized';
           return [entry.hash, status];
         } catch (error) {
@@ -203,7 +203,7 @@
 <main class="layout">
   <aside class="rail">
     <div class="rail-head">
-      <div class="rail-heading"><h1>Agreements</h1><button class="new" onclick={() => drawer.showModal()} aria-label="New agreement">+ New</button></div>
+      <div class="rail-heading"><h1>Agreements</h1><button class="new" onclick={() => { problem = ''; drawer.showModal(); }} aria-label="New agreement">+ New</button></div>
       <div class="filters" aria-label="Agreement filter">
         {#each ['All', 'Live', 'Replay'] as filter}
           <button class:chosen={listMode === filter} aria-pressed={listMode === filter} onclick={() => listMode = filter}>{filter}</button>
@@ -277,6 +277,7 @@
           </ol>
           {#if item.status === 'PROPOSED' && dayNow < item.start}
             <button class="primary" disabled={busy || itemPending || (!!wallet && !guest)} onclick={() => write('accept', [item.id], item.id)}>Accept terms</button>
+            {#if wallet && !guest}<p class="chart-foot">Switch to the named customer wallet to accept.</p>{/if}
           {:else if item.status === 'ACCEPTED'}
             <button class="primary" disabled={busy || itemPending || dayNow < cutoff} onclick={() => write('settle', [item.id], item.id)}>Settle rainfall</button>
           {:else if item.status === 'CREDIT_DUE' && !item.replay && (owned || !wallet)}
@@ -294,7 +295,7 @@
     <section class="activity" id="activity">
       <div class="section-head"><h3>Transaction activity</h3><button class="text-btn" disabled={refreshing} onclick={() => { void check(); void load(); }}>Refresh ↻</button></div>
       {#each activity as entry (entry.hash)}
-        <div class="tx"><span class="tx-phase">{entry.state}</span><strong>{actions[entry.method]}</strong><span>{entry.detail}</span><a href={explorer + entry.hash} target="_blank" rel="noreferrer">Explorer ↗</a></div>
+        <div class="tx"><span class="tx-phase">{entry.state}</span>{#if entry.id}<button class="text-btn tx-case" onclick={() => choose(entry.id)}>{actions[entry.method]} · #{entry.id}</button>{:else}<strong>{actions[entry.method]}</strong>{/if}<span>{entry.detail}</span><a href={explorer + entry.hash} target="_blank" rel="noreferrer">Explorer ↗</a></div>
       {:else}
         <p>Transactions submitted from this browser will appear here.</p>
       {/each}

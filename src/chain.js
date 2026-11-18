@@ -1,4 +1,4 @@
-import { createClient } from 'genlayer-js';
+import { abi, createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
 import { CalldataAddress, TransactionHashVariant, transactionsStatusNumberToName } from 'genlayer-js/types';
 import deployment from './deployment.json';
@@ -48,7 +48,7 @@ export async function connect() {
   return { account, client: createClient({ chain: studionet, account, provider }) };
 }
 
-export async function transaction(hash) {
+export async function transaction(hash, method) {
   const receipt = await rpc.getTransaction({ hash });
   if (!receipt) return { state: 'Submitted', detail: 'Waiting for the network' };
   const state = receipt.statusName || receipt.status_name || transactionsStatusNumberToName[receipt.status] || receipt.status;
@@ -64,7 +64,14 @@ export async function transaction(hash) {
     return { state: 'Verifying', detail: 'Waiting for the execution receipt' };
   }
   const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
-  if (bytes[0] === 0) return { state: 'Finalized', detail: 'Execution succeeded' };
+  if (bytes[0] === 0) {
+    const result = { state: 'Finalized', detail: 'Execution succeeded' };
+    if (method === 'propose') {
+      const id = Number(abi.calldata.decode(bytes.slice(1)));
+      if (Number.isSafeInteger(id) && id > 0) result.id = id;
+    }
+    return result;
+  }
   const message = [1, 2].includes(bytes[0]) && new TextDecoder().decode(bytes.slice(1));
   return { state: 'Failed', detail: message || 'Execution did not settle' };
 }
