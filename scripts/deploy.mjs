@@ -54,11 +54,11 @@ const read = async (id) => JSON.parse(await client.readContract({
   transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
 }));
 
-const list = async () => {
+const list = async (before = 0) => {
   const result = await client.readContract({
     address,
     functionName: 'list_agreements',
-    args: [0],
+    args: [before],
     transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
   });
   return typeof result === 'string' ? JSON.parse(result) : result;
@@ -115,10 +115,21 @@ function verifySettlement(agreement) {
 }
 
 async function findE2EAgreement() {
-  const agreements = await list();
-  return agreements
-    .filter((item) => !item.replay && typeof item.title === 'string' && item.title.startsWith(e2ePrefix))
-    .sort((a, b) => Number(b.id) - Number(a.id))[0] ?? null;
+  let before = 0;
+  for (let page = 0; page < 100; page += 1) {
+    const agreements = await list(before);
+    const match = agreements
+      .filter((item) => !item.replay && typeof item.title === 'string' && item.title.startsWith(e2ePrefix))
+      .sort((a, b) => Number(b.id) - Number(a.id))[0];
+    if (match) return match;
+    if (agreements.length < 12) return null;
+    const oldestId = Number(agreements.at(-1)?.id);
+    if (!Number.isSafeInteger(oldestId) || oldestId <= 0 || oldestId >= before && before !== 0) {
+      throw new Error('Agreement pagination returned an invalid cursor');
+    }
+    before = oldestId;
+  }
+  throw new Error('Agreement pagination exceeded 100 pages without finding the E2E agreement');
 }
 
 async function createE2EAgreement() {
@@ -179,6 +190,12 @@ async function settleE2EAgreement({ createIfMissing = false } = {}) {
     agreement = await createE2EAgreement();
   }
 
+  if (agreement.replay || !agreement.title?.startsWith(e2ePrefix)) {
+    throw new Error('Settlement target is not the dedicated live E2E agreement.');
+  }
+  if (!agreement.sponsor || !agreement.guest || agreement.sponsor.toLowerCase() === agreement.guest.toLowerCase()) {
+    throw new Error('E2E agreement does not contain distinct sponsor and customer wallets.');
+  }
   if (agreement.status === 'PROPOSED') {
     throw new Error('E2E agreement is PROPOSED but not ACCEPTED; manual recovery is required.');
   }
