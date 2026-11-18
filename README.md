@@ -47,7 +47,7 @@ Every push to `main` and every pull request targeting `main` runs the frontend p
 
 The Studionet contract verification workflow checks both finalized replay outcomes and creates a fresh, non-replay agreement using two temporary faucet-backed test accounts. It verifies the proposal and customer acceptance on-chain. Because the contract only permits settlement after the observation window and an eight-day archive publication delay, the workflow checks maturity daily and then submits a real `settle` transaction. The settlement check reads back the finalized daily observations, verifies their sum, and checks that the final status matches the agreed threshold. The test does not deploy a replacement contract.
 
-The dependency security workflow runs `npm audit` on pushes and pull requests and fails when high- or critical-severity vulnerabilities remain.
+The dependency security workflow strictly audits production dependencies and fails on any high- or critical-severity production finding. It also scans the complete development toolchain; the currently unpatched, dev-only Picomatch advisory and its mitigation are documented in [SECURITY.md](SECURITY.md).
 
 To deploy a separate Studionet instance, use a funded account via `STUDIONET_PRIVATE_KEY` or a fresh faucet account:
 

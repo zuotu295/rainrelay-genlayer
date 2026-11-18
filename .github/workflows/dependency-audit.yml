@@ -20,29 +20,48 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Audit dependencies
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Audit complete dependency graph
         run: |
           npm audit --json > npm-audit.json || true
           node --input-type=module <<'NODE'
           import { readFileSync } from 'node:fs';
           const report = JSON.parse(readFileSync('npm-audit.json', 'utf8'));
-          const counts = report.metadata?.vulnerabilities ?? {};
-          console.log('Dependency vulnerability summary:', JSON.stringify(counts));
-          for (const [name, item] of Object.entries(report.vulnerabilities ?? {})) {
-            const via = (item.via ?? []).map((entry) => typeof entry === 'string' ? entry : {
-              title: entry.title, url: entry.url, range: entry.range,
-            });
-            console.log(JSON.stringify({
-              package: name,
-              severity: item.severity,
-              direct: item.isDirect,
-              range: item.range,
-              via,
-              fixAvailable: item.fixAvailable,
-            }));
-          }
-          if ((counts.high ?? 0) > 0 || (counts.critical ?? 0) > 0) {
+          const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
+          const allowed = new Set([
+            '@sveltejs/vite-plugin-svelte',
+            'fdir',
+            'picomatch',
+            'tinyglobby',
+            'vite',
+          ]);
+          const entries = Object.entries(report.vulnerabilities ?? {});
+          const unexpected = entries.filter(([name, item]) => {
+            if (!allowed.has(name) || item.severity !== 'high' || !item.nodes?.length) return true;
+            return item.nodes.some((node) => lock.packages[node]?.dev !== true);
+          });
+          const picomatch = report.vulnerabilities?.picomatch;
+          const advisoryPresent = picomatch?.via?.some((entry) =>
+            typeof entry === 'object' &&
+            entry.url === 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf'
+          );
+          const advisoryUrls = new Set(entries.flatMap(([, item]) =>
+            (item.via ?? []).filter((entry) => typeof entry === 'object').map((entry) => entry.url)
+          ));
+          console.log('Full dependency audit:', JSON.stringify(report.metadata?.vulnerabilities ?? {}));
+          if (entries.length === 0) {
+            console.log('No dependency advisories found.');
+          } else if (
+            !advisoryPresent ||
+            advisoryUrls.size !== 1 ||
+            !advisoryUrls.has('https://github.com/advisories/GHSA-fc5q-39xc-vjpf') ||
+            unexpected.length > 0
+          ) {
+            console.error('Unexpected or non-development dependency vulnerability:', JSON.stringify(unexpected));
             process.exitCode = 1;
+          } else {
+            console.log('Known exception only: GHSA-fc5q-39xc-vjpf affects the development-only Vite toolchain. See SECURITY.md.');
           }
           NODE
       - uses: actions/upload-artifact@v4
