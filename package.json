@@ -1,14 +1,30 @@
 {
   "name": "rainrelay",
   "version": "1.0.0",
-  "description": "",
+  "description": "Weather-contingent booking credit agreements powered by GenLayer consensus.",
+  "author": "zuotu295",
+  "keywords": [
+    "genlayer",
+    "intelligent-contract",
+    "weather-data",
+    "rainfall",
+    "booking",
+    "service-credit",
+    "svelte"
+  ],
+  "homepage": "https://zuotu295.github.io/rainrelay-genlayer/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zuotu295/rainrelay-genlayer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zuotu295/rainrelay-genlayer/issues"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "deploy:contract": "node scripts/deploy.mjs"
   },
-  "keywords": [],
-  "author": "",
   "license": "MIT",
   "type": "module",
   "dependencies": {

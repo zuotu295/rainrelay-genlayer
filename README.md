@@ -35,11 +35,17 @@ npm run dev
 npm run build
 ```
 
-Public Studionet contract: `0x31e29eC685E6158Bf331b6C7C7A455F00458C90C`.
+Public Studionet contract (Chain ID 61999): [`0x31e29eC685E6158Bf331b6C7C7A455F00458C90C`](https://explorer-studio.genlayer.com/address/0x31e29eC685E6158Bf331b6C7C7A455F00458C90C).
 
-- [Deployment](https://explorer-studio.genlayer.com/tx/0x4fcbba486c261b69a4fc6f092c66bc4eac99ce2df9d8f3784866a9367a818f82)
+- [Deployment transaction](https://explorer-studio.genlayer.com/tx/0x4fcbba486c261b69a4fc6f092c66bc4eac99ce2df9d8f3784866a9367a818f82)
 - [Credit-due replay](https://explorer-studio.genlayer.com/tx/0x0343c002a7c814695c28106f97a60ce8af3fe0267ae4fbc17f22109131df1aef)
 - [Below-trigger replay](https://explorer-studio.genlayer.com/tx/0xe5a62fdd0758fe9cb4037de4b1d96213a22a35c6d0af7aaffb5c83d740d01c10)
+
+### Automated verification
+
+Every push to `main` and every pull request targeting `main` runs the frontend production build, validates the configured contract address, and checks the contract's Python syntax. Successful pushes to `main` continue to publish the GitHub Pages site.
+
+The live on-chain smoke test is available under **GitHub Actions → Studionet Contract Smoke Test → Run workflow**. It reads the contract address from `src/deployment.json`, uses a faucet-backed test account, waits for transaction finality, verifies both seeded replay outcomes, and exercises a fresh proposal/acceptance flow. Because this test submits transactions to Studionet, it is manually triggered rather than run on every commit. It tests the configured deployment and does not deploy a replacement contract.
 
 To deploy a separate Studionet instance, use a funded account via `STUDIONET_PRIVATE_KEY` or a fresh faucet account:
 
@@ -47,7 +53,7 @@ To deploy a separate Studionet instance, use a funded account via `STUDIONET_PRI
 STUDIONET_FAUCET=1 npm run deploy:contract -- --smoke
 ```
 
-The smoke command checks both historical outcomes and uses separate sponsor and customer accounts to exercise live proposal and acceptance. To exercise an existing deployment, set `STUDIONET_CONTRACT_ADDRESS` as well. Update `src/deployment.json` for a new frontend deployment, or pass `VITE_RAINRELAY_ADDRESS` at build time. GitHub Pages publishes the `dist/` build via Actions. The contract uses Studionet test infrastructure and eventual finality.
+When no `STUDIONET_CONTRACT_ADDRESS` is supplied, the script deploys a new contract before running the smoke checks. To exercise an existing deployment locally, set `STUDIONET_CONTRACT_ADDRESS` to that deployment's address. Update `src/deployment.json` for a new frontend deployment, or pass `VITE_RAINRELAY_ADDRESS` at build time. GitHub Pages publishes the `dist/` build via Actions. The contract uses Studionet test infrastructure and eventual finality.
 
 ## GenLayer Projects submission
 

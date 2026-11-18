@@ -1,0 +1,33 @@
+name: Studionet Contract Smoke Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Load configured contract address
+        run: |
+          node --input-type=module <<'NODE' >> "$GITHUB_ENV"
+          import { readFileSync } from 'node:fs';
+          const { address } = JSON.parse(readFileSync('src/deployment.json', 'utf8'));
+          if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+            throw new Error('src/deployment.json must contain a valid EVM contract address');
+          }
+          console.log('STUDIONET_CONTRACT_ADDRESS=' + address);
+          NODE
+      - name: Run finalized Studionet smoke checks
+        env:
+          STUDIONET_FAUCET: "1"
+        run: npm run deploy:contract -- --smoke
