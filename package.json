@@ -25,7 +25,8 @@
     "build": "vite build",
     "deploy:contract": "node scripts/deploy.mjs",
     "test:contract:smoke": "node scripts/deploy.mjs --smoke",
-    "test:contract:settlement": "node scripts/deploy.mjs --settle-e2e"
+    "test:contract:settlement": "node scripts/deploy.mjs --settle-e2e",
+    "test:contract:evidence": "node scripts/verify-evidence.mjs"
   },
   "license": "MIT",
   "type": "module",

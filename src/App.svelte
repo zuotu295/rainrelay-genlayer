@@ -282,7 +282,7 @@
             <button class="primary" disabled={busy || itemPending || dayNow < cutoff} onclick={() => write('settle', [item.id], item.id)}>Settle rainfall</button>
           {:else if item.status === 'CREDIT_DUE' && !item.replay && (owned || !wallet)}
             <form class="redeem" onsubmit={(event) => { event.preventDefault(); void write('acknowledge_redemption', [item.id, receipt], item.id); }}>
-              <label for="order">Public booking reference</label><input id="order" bind:value={receipt} pattern="[A-Za-z0-9_-]{4,48}" required maxlength="48" placeholder="BOOKING-025">
+              <label for="order">Public booking reference</label><input id="order" bind:value={receipt} pattern={'[A-Za-z0-9_\\-]{4,48}'} required maxlength="48" placeholder="BOOKING-025">
               <button class="primary" disabled={busy || itemPending}>Acknowledge redemption</button>
             </form>
           {/if}
