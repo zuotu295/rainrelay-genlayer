@@ -1,0 +1,43 @@
+name: Dependency Fix Preview
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Apply semver-compatible audit fixes to the lockfile
+        run: npm audit fix --package-lock-only || true
+      - name: Validate lockfile and build
+        run: |
+          npm ci
+          npm run build
+          npm audit --json > npm-audit-after-fix.json || true
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const report = JSON.parse(readFileSync('npm-audit-after-fix.json', 'utf8'));
+          console.log('Post-fix vulnerability summary:', JSON.stringify(report.metadata?.vulnerabilities ?? {}));
+          for (const [name, item] of Object.entries(report.vulnerabilities ?? {})) {
+            console.log(JSON.stringify({ package: name, severity: item.severity, range: item.range, fixAvailable: item.fixAvailable }));
+          }
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-fix-preview
+          path: |
+            package-lock.json
+            npm-audit-after-fix.json
+          retention-days: 3

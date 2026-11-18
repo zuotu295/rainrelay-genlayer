@@ -23,7 +23,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "deploy:contract": "node scripts/deploy.mjs"
+    "deploy:contract": "node scripts/deploy.mjs",
+    "test:contract:smoke": "node scripts/deploy.mjs --smoke",
+    "test:contract:settlement": "node scripts/deploy.mjs --settle-e2e"
   },
   "license": "MIT",
   "type": "module",

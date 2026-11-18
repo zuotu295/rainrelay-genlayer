@@ -1,13 +1,17 @@
-name: Studionet Contract Smoke Test
+name: Studionet Contract Verification
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: "15 4 * * *"
 
 permissions:
   contents: read
 
 jobs:
-  smoke:
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -17,7 +21,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Load configured contract address
+      - name: Load configured Studionet address
         run: |
           node --input-type=module <<'NODE' >> "$GITHUB_ENV"
           import { readFileSync } from 'node:fs';
@@ -27,7 +31,13 @@ jobs:
           }
           console.log('STUDIONET_CONTRACT_ADDRESS=' + address);
           NODE
-      - name: Run finalized Studionet smoke checks
+      - name: Run replay checks and create/accept live E2E agreement
+        if: ${{ github.event_name != 'schedule' }}
         env:
           STUDIONET_FAUCET: "1"
-        run: npm run deploy:contract -- --smoke
+        run: npm run test:contract:smoke
+      - name: Settle mature live E2E agreement
+        if: ${{ github.event_name == 'schedule' }}
+        env:
+          STUDIONET_FAUCET: "1"
+        run: npm run test:contract:settlement
